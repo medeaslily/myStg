@@ -38,13 +38,18 @@ class Position {
  * @param {Image} image - キ ャ ラ ク タ ーの画像
  */
 class Character {
-  constructor(ctx, x, y, w, h, life, image) {
+  constructor(ctx, x, y, w, h, life, imagePath) {
     this.ctx = ctx
     this.position = new Position(x, y)
     this.width = w
     this.height = h
     this.life = life
-    this.image = image
+    this.ready = false
+    this.image = new Image()
+    this.image.addEventListener('load', () => {
+      this.ready = true
+    }, false)
+    this.image.src = imagePath
   }
 
   draw() {
@@ -61,8 +66,8 @@ class Character {
 }
 
 class Viper extends Character {
-  constructor(ctx, x, y, w, h, image) {
-    super(ctx, x, y, w, h, 0, image)
+  constructor(ctx, x, y, w, h, imagePath) {
+    super(ctx, x, y, w, h, 0, imagePath)
     /**
      * viper が登場中かどうかを表すフラグ
      * @type {boolean}
@@ -155,15 +160,15 @@ class Viper extends Character {
       this.position.set(tx, ty)
     }
 
-    // キーの押下状態を調べてショットを生成する
+    // 通过检查按键来更新子弹状态
     if(window.isKeyDown.key_z === true){
-      // ショットの生存を確認し非生存のものがあれば生成する
+      // 检查子弹生存状态并生成任何非生存的子弹
       for(let i = 0; i < this.shotArray.length; ++i){
-        // 非生存かどうかを確認する
+        // 生成尚未出现在屏幕上的子弹
         if(this.shotArray[i].life <= 0){
-          // 自機キャラクターの座標にショットを生成する
+          // 以自机坐标设定生存状态的子弹
           this.shotArray[i].set(this.position.x, this.position.y);
-          // ひとつ生成したらループを抜ける
+          // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
           break;
         }
       }
@@ -176,24 +181,26 @@ class Viper extends Character {
 class Shot extends Character {
   constructor(ctx, x, y, w, h, imagePath) {
     super(ctx, x, y, w, h, 0, imagePath)
+    this.speed = 7
   }
 
   set(x, y) {
-    // 移动shot到登场位置
+    // 将子弹移至起始位置
     this.position.set(x, y)
+    // 将子弹设为生存状态
     this.life = 1
   }
 
   update() {
-    // 如果shot的life为0及以下的场合
+    // 如果子弹是非生存状态的场合，不做任何绘制
     if (this.life <= 0) {return}
-    // 如果shot移动到画面(上端)外，life设定为0
+    // 如果子弹移动到画面(上端)外，life设定为0
     if (this.position.y + this.height < 0) {
       this.life = 0
     }
-    // 向上移动
+    // 子弹向上移动
     this.position.y -= this.speed
-    // 绘制shot
+    // 绘制子弹
     this.draw()
   }
 }
