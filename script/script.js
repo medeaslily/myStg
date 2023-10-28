@@ -50,6 +50,11 @@
    * @type {Array<Shot>}
    */
   let shotArray = []
+  /**
+   * 单发子弹
+   * @type {Array<Shot>}
+   */
+  let singleShotArray = []
 
 
   window.addEventListener('load', () => {
@@ -78,10 +83,14 @@
 
     // 初始化子弹实例
     for (let i = 0; i < SHOT_MAX_COUNT; i++) {
+      // 双发子弹与单发子弹的数量比是1:2
       shotArray[i] = new Shot(ctx, 0, 0, 32, 32, './image/viper_shot.png')
+      singleShotArray[i * 2] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png')
+      singleShotArray[i * 2 + 1] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png')
     }
     // 设置自机拥有的子弹实例数组
-    viper.setShotArray(shotArray)
+    viper.setShotArray(shotArray, singleShotArray)
+
   }
 
   /**
@@ -92,10 +101,10 @@
     let ready = true
     // 使用 AND 运算检查是否准备好
     ready = ready && viper.ready
-    // 还要检查子弹的准备情况
-    shotArray.map((v) => {
-      ready = ready && v.ready
-    })
+    // 检查子弹的准备情况
+    shotArray.map((v) => {ready = ready && v.ready})
+    // 检查双发子弹的装备情况
+    singleShotArray.map((v) => {ready = ready && v.ready})
 
     // 所有准备工作完成后，进行下一步
     if (ready === true) {
@@ -127,6 +136,8 @@
 
     // 子弹的状态更新
     shotArray.map((v) => {v.update()})
+    // 双发子弹的状态更新
+    singleShotArray.map((v) => {v.update()})
 
     // 为了持续循环，进行绘制处理的递归调用
     requestAnimationFrame(render)

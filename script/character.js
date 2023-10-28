@@ -72,7 +72,7 @@ class Viper extends Character {
      * viper が登場中かどうかを表すフラグ
      * @type {boolean}
      */
-    this.isComing = false;
+    this.isComing = false
     /**
      * 登場演出を開始した際のタイムスタンプ
      * @type {number}
@@ -98,6 +98,21 @@ class Viper extends Character {
      * @param{Array<Shot>}
      */
     this.shotArray = null
+    /**
+     * 双发子弹数组
+     * @type {Array<Shot>}
+     */
+    this.singleShotArray = null
+    /**
+     * 子弹检查计数器
+     * @type {number}
+     */
+    this.shotCheckCounter = 0
+    /**
+     * 子弹间隔
+     * @type {number}
+     */
+    this.shotInterval = 10
   }
 
   setComing(startX, startY, endX, endY) {
@@ -112,9 +127,11 @@ class Viper extends Character {
   /**
    * 设置子弹
    * @param {Array<Shot>}shotArray - 设置自身的子弹数组
+   * @param {Array<Shot>} singleShotArray - 设置双发子弹数组
    */
-  setShotArray(shotArray) {
+  setShotArray(shotArray, singleShotArray) {
     this.shotArray = shotArray
+    this.singleShotArray = singleShotArray
   }
 
   update() {
@@ -162,18 +179,40 @@ class Viper extends Character {
 
     // 通过检查按键来更新子弹状态
     if(window.isKeyDown.key_z === true){
-      // 检查子弹生存状态并生成任何非生存的子弹
-      for(let i = 0; i < this.shotArray.length; ++i){
-        // 生成尚未出现在屏幕上的子弹
-        if(this.shotArray[i].life <= 0){
-          // 以自机坐标设定生存状态的子弹
-          this.shotArray[i].set(this.position.x, this.position.y);
-          // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
-          break;
+      let i
+      // 计数器为0及以上允许生成子弹
+      if (this.shotCheckCounter >= 0) {
+        // 检查子弹生存状态并生成任何非生存的子弹
+        for(i = 0; i < this.shotArray.length; ++i){
+          // 生成尚未出现在屏幕上的子弹
+          if(this.shotArray[i].life <= 0){
+            // 以自机坐标设定生存状态的子弹
+            this.shotArray[i].set(this.position.x, this.position.y)
+            // 计数器设置为负间隔
+            this.shotCheckCounter = -this.shotInterval
+            // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
+            break;
+          }
+        }
+        // 生成双发子弹
+        for(i = 0; i < this.singleShotArray.length; i += 2){
+          // 生成尚未出现在屏幕上的子弹
+          if(this.singleShotArray[i].life <= 0 && this.singleShotArray[i + 1].life <= 0){
+            // 以自机坐标设定生存状态的子弹
+            this.singleShotArray[i].set(this.position.x, this.position.y)
+            this.singleShotArray[i].setVector(0.2, -0.9)  // 右上方向
+            this.singleShotArray[i + 1].set(this.position.x, this.position.y)
+            this.singleShotArray[i + 1].setVector(-0.2, -0.9)  // 右上方向
+            // 计数器设置为负间隔
+            this.shotCheckCounter = -this.shotInterval
+            // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
+            break;
+          }
         }
       }
     }
-
+    // 计数器每帧递增
+    ++this.shotCheckCounter
     this.draw()
   }
 }
@@ -181,7 +220,16 @@ class Viper extends Character {
 class Shot extends Character {
   constructor(ctx, x, y, w, h, imagePath) {
     super(ctx, x, y, w, h, 0, imagePath)
+    /**
+     * 自身移动的速度（update一次的移动量）
+     * @type {number}
+     */
     this.speed = 7
+    /**
+     * 子弹的方向
+     * @type {Position}
+     */
+    this.vector = new Position(0.0, -1.0)
   }
 
   set(x, y) {
@@ -191,6 +239,15 @@ class Shot extends Character {
     this.life = 1
   }
 
+  /**
+   * 设定子弹移动方向
+   * @param {number} x - X方向的移动量
+   * @param {number} y - Y方向的移动量
+   */
+  setVector(x, y) {
+    this.vector.set(x, y)
+  }
+
   update() {
     // 如果子弹是非生存状态的场合，不做任何绘制
     if (this.life <= 0) {return}
@@ -198,8 +255,9 @@ class Shot extends Character {
     if (this.position.y + this.height < 0) {
       this.life = 0
     }
-    // 子弹向上移动
-    this.position.y -= this.speed
+    // 使用vector进行移动
+    this.position.x += this.vector.x * this.speed
+    this.position.y += this.vector.y * this.speed
     // 绘制子弹
     this.draw()
   }
