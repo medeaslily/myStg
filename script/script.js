@@ -14,6 +14,11 @@
    * @type {number}
    */
   const SHOT_MAX_COUNT = 10
+  /**
+   * 敌机实例数
+   * @type {number}
+   */
+  const ENEMY_MAX_COUNT = 10
 
   /**
    * 包装 Canvas2D API的实用类
@@ -39,6 +44,11 @@
    * @type {Viper} - 自机实例
    */
   let viper = null
+  /**
+   * 敌机实例数组
+   * @type {Array<Enemy>}
+   */
+  let enemyArray = []
   /**
    * 检查按键状态的对象
    * @global
@@ -69,9 +79,12 @@
   }, false)
 
   function initialize() {
+    let i
+    // canvas大小设定
     canvas.height = CANVAS_HEIGHT
     canvas.width = CANVAS_WIDTH
 
+    // 自机实例初始化
     viper = new Viper(ctx, 0, 0, 64, 64, './image/viper.png')
     // 进行登场场景设定
     viper.setComing(
@@ -81,8 +94,13 @@
         CANVAS_HEIGHT - 100
     )
 
+    // 敌机实例初始化
+    for (i = 0; i < ENEMY_MAX_COUNT; i++) {
+      enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png')
+    }
+
     // 初始化子弹实例
-    for (let i = 0; i < SHOT_MAX_COUNT; i++) {
+    for (i = 0; i < SHOT_MAX_COUNT; i++) {
       // 双发子弹与单发子弹的数量比是1:2
       shotArray[i] = new Shot(ctx, 0, 0, 32, 32, './image/viper_shot.png')
       singleShotArray[i * 2] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png')
@@ -100,11 +118,14 @@
     // 准备确认
     let ready = true
     // 使用 AND 运算检查是否准备好
+    // 检测自机实例的准备情况
     ready = ready && viper.ready
-    // 检查子弹的准备情况
+    // 检查子弹实例的准备情况
     shotArray.map((v) => {ready = ready && v.ready})
-    // 检查双发子弹的装备情况
+    // 检查双发子弹实例的准备情况
     singleShotArray.map((v) => {ready = ready && v.ready})
+    // 检查敌机实例的准备情况
+    enemyArray.map((v) => {ready = ready && v.ready})
 
     // 所有准备工作完成后，进行下一步
     if (ready === true) {
@@ -131,13 +152,17 @@
     // 计算经过的时间
     let nowTime = (Date.now() - startTime) / 1000
 
-    // 自机实例的状态更新
+    // 自机状态更新
     viper.update()
 
-    // 子弹的状态更新
+    // 子弹状态更新
     shotArray.map((v) => {v.update()})
-    // 双发子弹的状态更新
+
+    // 双发子弹状态更新
     singleShotArray.map((v) => {v.update()})
+
+    // 敌机状态更新
+    enemyArray.map((v) => {v.update()})
 
     // 为了持续循环，进行绘制处理的递归调用
     requestAnimationFrame(render)

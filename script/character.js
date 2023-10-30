@@ -301,3 +301,34 @@ class Shot extends Character {
     this.rotationDraw();
   }
 }
+
+class Enemy extends Character {
+  /**
+   * @constructor
+   * @param {CanvasRenderingContext2D} ctx - 描画などに利用する 2D コンテキスト
+   * @param {number} x - X 座標
+   * @param {number} y - Y 座標
+   * @param {number} w - 幅
+   * @param {number} h - 高さ
+   * @param {imagePath} imagePath - キャラクター用の画像のパス
+   */
+  constructor(ctx, x, y, w, h, imagePath) {
+    super(ctx, x, y, w, h, 0, imagePath)
+    this.speed = 3
+  }
+  set(x, y, life = 1) {
+    this.position.set(x, y)
+    this.life = life
+  }
+
+  update() {
+    if (this.life <= 0) {return}
+    // 移动到画面（下端）外生命设0
+    if (this.position.y - this.height > this.ctx.canvas.height) {
+      this.life = 0
+    }
+    this.position.x = this.vector.x * this.speed
+    this.position.y = this.vector.y * this.speed
+    this.draw()
+  }
+}
