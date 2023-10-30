@@ -41,6 +41,15 @@ class Character {
   constructor(ctx, x, y, w, h, life, imagePath) {
     this.ctx = ctx
     this.position = new Position(x, y)
+    /**
+     * @type {Position}
+     */
+    this.vector = new Position(0.0, -1.0)
+    /**
+     * 绘制使用的坐标系旋转角度
+     * @type {number}
+     */
+    this.angle = 270 * Math.PI / 180
     this.width = w
     this.height = h
     this.life = life
@@ -50,6 +59,26 @@ class Character {
       this.ready = true
     }, false)
     this.image.src = imagePath
+  }
+
+  /**
+   * 设定子弹移动方向
+   * @param {number} x - X方向的移动量
+   * @param {number} y - Y方向的移动量
+   */
+  setVector(x, y) {
+    this.vector.set(x, y)
+  }
+
+  /**
+   * 设置坐标系旋转的弧度以及对应的向量
+   * @param angle
+   */
+  setVectorFromAngle(angle) {
+    this.angle = angle
+    let sin = Math.sin(angle)
+    let cos = Math.cos(angle)
+    this.vector.set(cos, sin)
   }
 
   draw() {
@@ -62,6 +91,25 @@ class Character {
         this.position.y - offsetY,
         this.width,
         this.height)
+  }
+
+  rotationDraw() {
+    this.ctx.save()
+    this.ctx.translate(this.position.x, this.position.y)
+    this.ctx.rotate(this.angle - Math.PI * 1.5)
+
+    let offsetX = this.width / 2
+    let offsetY = this.height / 2
+
+    this.ctx.drawImage(
+        this.image,
+        -offsetX, // 考虑到原点在自机中心点，使图像中心在自机中心
+        -offsetY,
+        this.width,
+        this.height
+    )
+
+    this.ctx.restore()
   }
 }
 
@@ -157,16 +205,16 @@ class Viper extends Character {
         this.ctx.globalAlpha = 0.5
       }
     } else {
-      if(window.isKeyDown.key_ArrowLeft === true){
+      if (window.isKeyDown.key_ArrowLeft === true) {
         this.position.x -= this.speed; // アローキーの左
       }
-      if(window.isKeyDown.key_ArrowRight === true){
+      if (window.isKeyDown.key_ArrowRight === true) {
         this.position.x += this.speed; // アローキーの右
       }
-      if(window.isKeyDown.key_ArrowUp === true){
+      if (window.isKeyDown.key_ArrowUp === true) {
         this.position.y -= this.speed; // アローキーの上
       }
-      if(window.isKeyDown.key_ArrowDown === true){
+      if (window.isKeyDown.key_ArrowDown === true) {
         this.position.y += this.speed; // アローキーの下
       }
       // 检查移动后的位置是否脱离屏幕并修正
@@ -178,14 +226,14 @@ class Viper extends Character {
     }
 
     // 通过检查按键来更新子弹状态
-    if(window.isKeyDown.key_z === true){
+    if (window.isKeyDown.key_z === true) {
       let i
       // 计数器为0及以上允许生成子弹
       if (this.shotCheckCounter >= 0) {
         // 检查子弹生存状态并生成任何非生存的子弹
-        for(i = 0; i < this.shotArray.length; ++i){
+        for (i = 0; i < this.shotArray.length; ++i) {
           // 生成尚未出现在屏幕上的子弹
-          if(this.shotArray[i].life <= 0){
+          if (this.shotArray[i].life <= 0) {
             // 以自机坐标设定生存状态的子弹
             this.shotArray[i].set(this.position.x, this.position.y)
             // 计数器设置为负间隔
@@ -195,14 +243,17 @@ class Viper extends Character {
           }
         }
         // 生成双发子弹
-        for(i = 0; i < this.singleShotArray.length; i += 2){
+        for (i = 0; i < this.singleShotArray.length; i += 2) {
           // 生成尚未出现在屏幕上的子弹
-          if(this.singleShotArray[i].life <= 0 && this.singleShotArray[i + 1].life <= 0){
+          if (this.singleShotArray[i].life <= 0 && this.singleShotArray[i + 1].life <= 0) {
             // 以自机坐标设定生存状态的子弹
+            let radCw = 280 * Math.PI / 180
+            let radCCW = 260 * Math.PI / 180
+
             this.singleShotArray[i].set(this.position.x, this.position.y)
-            this.singleShotArray[i].setVector(0.2, -0.9)  // 右上方向
+            this.singleShotArray[i].setVectorFromAngle(radCw)  // 右上方向
             this.singleShotArray[i + 1].set(this.position.x, this.position.y)
-            this.singleShotArray[i + 1].setVector(-0.2, -0.9)  // 右上方向
+            this.singleShotArray[i + 1].setVectorFromAngle(radCCW)  // 右上方向
             // 计数器设置为负间隔
             this.shotCheckCounter = -this.shotInterval
             // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
@@ -225,11 +276,6 @@ class Shot extends Character {
      * @type {number}
      */
     this.speed = 7
-    /**
-     * 子弹的方向
-     * @type {Position}
-     */
-    this.vector = new Position(0.0, -1.0)
   }
 
   set(x, y) {
@@ -239,18 +285,11 @@ class Shot extends Character {
     this.life = 1
   }
 
-  /**
-   * 设定子弹移动方向
-   * @param {number} x - X方向的移动量
-   * @param {number} y - Y方向的移动量
-   */
-  setVector(x, y) {
-    this.vector.set(x, y)
-  }
-
   update() {
     // 如果子弹是非生存状态的场合，不做任何绘制
-    if (this.life <= 0) {return}
+    if (this.life <= 0) {
+      return
+    }
     // 如果子弹移动到画面(上端)外，life设定为0
     if (this.position.y + this.height < 0) {
       this.life = 0
@@ -258,7 +297,7 @@ class Shot extends Character {
     // 使用vector进行移动
     this.position.x += this.vector.x * this.speed
     this.position.y += this.vector.y * this.speed
-    // 绘制子弹
-    this.draw()
+    // 考虑到坐标系的旋转进行绘制
+    this.rotationDraw();
   }
 }
