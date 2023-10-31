@@ -19,6 +19,11 @@
    * @type {number}
    */
   const ENEMY_MAX_COUNT = 10
+  /**
+   * 敌机子弹实例最大数
+   * @type {number}
+   */
+  const ENEMY_SHOT_MAX_COUNT = 50
 
   /**
    * 包装 Canvas2D API的实用类
@@ -54,6 +59,11 @@
    * @type {Array<Enemy>}
    */
   let enemyArray = []
+  /**
+   * 敌机子弹实例数组
+   * @type {Array<Shot>}
+   */
+  let enemyShotArray = []
   /**
    * 检查按键状态的对象
    * @global
@@ -102,9 +112,15 @@
     // 场景实例初始化
     scene = new SceneManager()
 
+    // 敌机子弹实例初始化
+    for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
+      enemyShotArray[i] = new Shot(ctx, 0, 0, 32, 32, './image/enemy_shot.png')
+    }
+
     // 敌机实例初始化
     for (i = 0; i < ENEMY_MAX_COUNT; i++) {
       enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png')
+      enemyArray[i].setShotArray(enemyShotArray)
     }
 
     // 初始化子弹实例
@@ -134,6 +150,8 @@
     singleShotArray.map((v) => {ready = ready && v.ready})
     // 检查敌机实例的准备情况
     enemyArray.map((v) => {ready = ready && v.ready})
+    // 检查敌机子弹的准备情况
+    enemyShotArray.map((v) => {ready = ready && v.ready})
 
     // 所有准备工作完成后，进行下一步
     if (ready === true) {
@@ -177,6 +195,9 @@
     // 敌机状态更新
     enemyArray.map((v) => {v.update()})
 
+    // 敌机子弹状态更新
+    enemyShotArray.map((v) => {v.update()})
+
     // 为了持续循环，进行绘制处理的递归调用
     requestAnimationFrame(render)
   }
@@ -203,22 +224,27 @@
       }
     })
     // 添加 invade 场景
-    // 敌机从画面（上端）外向下出场
     scene.add('invade', (time) => {
       // 如果场景的执行计数器不是0，就立即结束
-      if (scene.frame !== 0) {return}
-      // 如果找到了生命值为0的敌人角色，就放置它
-      for (let i = 0; i < ENEMY_MAX_COUNT; i++) {
-        if (enemyArray[i].life <= 0) {
-          let e = enemyArray[i]
-          // 设置出现位置，X在画面中央，Y在画面上端外侧
-          e.set(CANVAS_WIDTH / 2, -e.height)
-          // 设置前进方向为直下
-          e.setVector(0.0, 1.0)
-          break
+      if (scene.frame === 0) {
+        // 敌机从画面（上端）外向下出场
+        for (let i = 0; i < ENEMY_MAX_COUNT; i++) {
+          if (enemyArray[i].life <= 0) {
+            let e = enemyArray[i]
+            // 设置出现位置，X在画面中央，Y在画面上端外侧
+            e.set(CANVAS_WIDTH / 2, -e.height)
+            // 设置前进方向为直下
+            e.setVector(0.0, 1.0)
+            break
+          }
         }
       }
+      // 第100帧再次使用 invade 场景
+      if (scene.frame === 100) {
+        scene.use('invade')
+      }
     })
+    // 设置初始场景
     scene.use('intro')
   }
 })()

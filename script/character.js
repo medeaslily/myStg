@@ -288,6 +288,16 @@ class Shot extends Character {
     this.life = 1
   }
 
+  /**
+   * 设置子弹的速度
+   * @param {number} [speed] - 设定速度
+   */
+  setSpeed(speed) {
+    if (speed != null && speed > 0) {
+      this.speed = speed
+    }
+  }
+
   update() {
     // 如果子弹是非生存状态的场合，不做任何绘制
     if (this.life <= 0) {
@@ -313,25 +323,94 @@ class Enemy extends Character {
    * @param {number} y - Y 座標
    * @param {number} w - 幅
    * @param {number} h - 高さ
-   * @param {imagePath} imagePath - キャラクター用の画像のパス
+   * @param {String} imagePath - キャラクター用の画像のパス
    */
   constructor(ctx, x, y, w, h, imagePath) {
     super(ctx, x, y, w, h, 0, imagePath)
+    /**
+     * 类型
+     * @type {string}
+     */
+    this.type = 'default'
+    /**
+     * 帧计数器
+     * @type {number}
+     */
+    this.frame = 0
+    /**
+     * 自身的移动速度（update 一次的移动量）
+     * @type {number}
+     */
     this.speed = 3
+    /**
+     * 敌机拥有的子弹实例数组
+     * @type {Array<Shot>}
+     */
+    this.shotArray = null
   }
-  set(x, y, life = 1) {
+  set(x, y, life = 1, type = 'default') {
+    // 敌机移动到的登场开始位置
     this.position.set(x, y)
+    // 设置敌机大于0的生命值
     this.life = life
+    // 设置敌机类型
+    this.type = type
+    // 重置敌机帧数
+    this.frame = 0
+  }
+
+  /**
+   * 设置子弹
+   * @param {Array<Shot>} shotArray - 设置子弹数组到自身
+   */
+  setShotArray(shotArray) {
+    this.shotArray = shotArray
+  }
+
+  /**
+   * 发射从自身开始,指定方向的子弹
+   * @param {number} [x=0.0] - 移动方向向量的X元素
+   * @param {number} [y=1.0] - 移动方向向量的Y元素
+   */
+  fire(x = 0.0, y = 1.0) {
+    // 生成非生存状态的子弹
+    for (let i = 0; i < this.shotArray.length; i++) {
+      // 非生存状态确认
+      if (this.shotArray[i].life <= 0) {
+        // 在敌机坐标处生成子弹
+        this.shotArray[i].set(this.position.x, this.position.y)
+        this.shotArray[i].setSpeed(5.0)
+        // 设置子弹的移动方向（默认真下）
+        this.shotArray[i].setVector(x, y)
+        // 一次生成一发子弹
+        break
+      }
+    }
   }
 
   update() {
     if (this.life <= 0) {return}
-    // 移动到画面（下端）外生命设0
-    if (this.position.y - this.height > this.ctx.canvas.height) {
-      this.life = 0
+    // 根据类型改变行为
+    // 也改变使生命值变为0的条件
+    switch (this.type) {
+      // 默认类型只是直接按设定的方向前进
+      case 'default':
+      default:
+        if (this.frame === 50) {
+          this.fire()
+        }
+        // 敌机沿 vector 移动
+        this.position.x += this.vector.x * this.speed
+        this.position.y += this.vector.y * this.speed
+        // 移动到画面（下端）外生命设0
+        if (this.position.y - this.height > this.ctx.canvas.height) {
+          this.life = 0
+        }
+        break
     }
-    this.position.x += this.vector.x * this.speed
-    this.position.y += this.vector.y * this.speed
+    // 进行绘制（目前不需要旋转，所以直接绘制）
     this.draw()
+    // 自身的帧计数器累加
+    ++this.frame
   }
 }

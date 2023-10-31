@@ -22,7 +22,7 @@ class SceneManager {
      */
     this.startTime = null
     /**
-     * 当前场景变为活动状态后的执行次数
+     * 帧计数器
      * @type {number}
      */
     this.frame = null
@@ -49,9 +49,9 @@ class SceneManager {
     }
     // 根据名称设置活动的场景
     this.activeScene = this.scene[name]
-    // 设置场景变为活动状态的时间戳
+    // 重置开始时间
     this.startTime = Date.now()
-    // 由于场景变为活动，因此重置计数器
+    // 重置帧计数器
     this.frame = -1
   }
 
@@ -63,7 +63,7 @@ class SceneManager {
     let activeTime = (Date.now() - this.startTime) / 1000
     // 传递经过的时间作为参数，调用 updateFunction
     this.activeScene(activeTime)
-    // 更新场景后，增加计数器
+    // 帧计数器加一
     ++this.frame
   }
 }
