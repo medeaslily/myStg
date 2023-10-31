@@ -223,48 +223,51 @@ class Viper extends Character {
       let tx = Math.min(Math.max(this.position.x, 0), canvasWidth)
       let ty = Math.min(Math.max(this.position.y, 0), canvasHeight)
       this.position.set(tx, ty)
-    }
 
-    // 通过检查按键来更新子弹状态
-    if (window.isKeyDown.key_z === true) {
-      let i
-      // 计数器为0及以上允许生成子弹
-      if (this.shotCheckCounter >= 0) {
-        // 检查子弹生存状态并生成任何非生存的子弹
-        for (i = 0; i < this.shotArray.length; ++i) {
-          // 生成尚未出现在屏幕上的子弹
-          if (this.shotArray[i].life <= 0) {
-            // 以自机坐标设定生存状态的子弹
-            this.shotArray[i].set(this.position.x, this.position.y)
-            // 计数器设置为负间隔
-            this.shotCheckCounter = -this.shotInterval
-            // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
-            break;
+      // 通过检查按键来更新子弹状态
+      if (window.isKeyDown.key_z === true) {
+        let i
+        // 计数器为0及以上允许生成子弹
+        if (this.shotCheckCounter >= 0) {
+          // 检查子弹生存状态并生成任何非生存的子弹
+          for (i = 0; i < this.shotArray.length; ++i) {
+            // 生成尚未出现在屏幕上的子弹
+            if (this.shotArray[i].life <= 0) {
+              // 以自机坐标设定生存状态的子弹
+              this.shotArray[i].set(this.position.x, this.position.y)
+              // 计数器设置为负间隔
+              this.shotCheckCounter = -this.shotInterval
+              // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
+              break;
+            }
           }
-        }
-        // 生成双发子弹
-        for (i = 0; i < this.singleShotArray.length; i += 2) {
-          // 生成尚未出现在屏幕上的子弹
-          if (this.singleShotArray[i].life <= 0 && this.singleShotArray[i + 1].life <= 0) {
-            // 以自机坐标设定生存状态的子弹
-            let radCw = 280 * Math.PI / 180
-            let radCCW = 260 * Math.PI / 180
+          // 生成双发子弹
+          for (i = 0; i < this.singleShotArray.length; i += 2) {
+            // 生成尚未出现在屏幕上的子弹
+            if (this.singleShotArray[i].life <= 0 && this.singleShotArray[i + 1].life <= 0) {
+              // 以自机坐标设定生存状态的子弹
+              let radCw = 280 * Math.PI / 180
+              let radCCW = 260 * Math.PI / 180
 
-            this.singleShotArray[i].set(this.position.x, this.position.y)
-            this.singleShotArray[i].setVectorFromAngle(radCw)  // 右上方向
-            this.singleShotArray[i + 1].set(this.position.x, this.position.y)
-            this.singleShotArray[i + 1].setVectorFromAngle(radCCW)  // 右上方向
-            // 计数器设置为负间隔
-            this.shotCheckCounter = -this.shotInterval
-            // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
-            break;
+              this.singleShotArray[i].set(this.position.x, this.position.y)
+              this.singleShotArray[i].setVectorFromAngle(radCw)  // 右上方向
+              this.singleShotArray[i + 1].set(this.position.x, this.position.y)
+              this.singleShotArray[i + 1].setVectorFromAngle(radCCW)  // 右上方向
+              // 计数器设置为负间隔
+              this.shotCheckCounter = -this.shotInterval
+              // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
+              break;
+            }
           }
         }
       }
+      // 计数器每帧递增
+      ++this.shotCheckCounter
     }
-    // 计数器每帧递增
-    ++this.shotCheckCounter
+
     this.draw()
+    // 为了稳妥起见，将全局alpha状态恢复原状
+    this.ctx.globalAlpha = 1.0
   }
 }
 
@@ -327,8 +330,8 @@ class Enemy extends Character {
     if (this.position.y - this.height > this.ctx.canvas.height) {
       this.life = 0
     }
-    this.position.x = this.vector.x * this.speed
-    this.position.y = this.vector.y * this.speed
+    this.position.x += this.vector.x * this.speed
+    this.position.y += this.vector.y * this.speed
     this.draw()
   }
 }

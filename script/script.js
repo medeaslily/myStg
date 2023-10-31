@@ -41,6 +41,11 @@
    */
   let startTime = null
   /**
+   * 场景实例
+   * @type {SceneManager}
+   */
+  let scene = null
+  /**
    * @type {Viper} - 自机实例
    */
   let viper = null
@@ -94,6 +99,9 @@
         CANVAS_HEIGHT - 100
     )
 
+    // 场景实例初始化
+    scene = new SceneManager()
+
     // 敌机实例初始化
     for (i = 0; i < ENEMY_MAX_COUNT; i++) {
       enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png')
@@ -132,6 +140,8 @@
       // 运行开始时获取时间戳
       startTime = Date.now()
       eventSetting()
+      // 设置场景
+      sceneSetting()
       //执行绘制
       render()
     }else{
@@ -151,6 +161,9 @@
 
     // 计算经过的时间
     let nowTime = (Date.now() - startTime) / 1000
+
+    // 场景更新
+    scene.update()
 
     // 自机状态更新
     viper.update()
@@ -176,5 +189,36 @@
     window.addEventListener('keyup', (event) => {
       isKeyDown[`key_${event.key}`] = false
     }, false)
+  }
+
+  /**
+   * 设置场景
+   */
+  function sceneSetting() {
+    // 添加初始场景
+    scene.add('intro', (time) => {
+      // 两秒后使用 invade 场景
+      if (time > 2.0) {
+        scene.use('invade')
+      }
+    })
+    // 添加 invade 场景
+    // 敌机从画面（上端）外向下出场
+    scene.add('invade', (time) => {
+      // 如果场景的执行计数器不是0，就立即结束
+      if (scene.frame !== 0) {return}
+      // 如果找到了生命值为0的敌人角色，就放置它
+      for (let i = 0; i < ENEMY_MAX_COUNT; i++) {
+        if (enemyArray[i].life <= 0) {
+          let e = enemyArray[i]
+          // 设置出现位置，X在画面中央，Y在画面上端外侧
+          e.set(CANVAS_WIDTH / 2, -e.height)
+          // 设置前进方向为直下
+          e.setVector(0.0, 1.0)
+          break
+        }
+      }
+    })
+    scene.use('intro')
   }
 })()
