@@ -129,6 +129,11 @@
       shotArray[i] = new Shot(ctx, 0, 0, 32, 32, './image/viper_shot.png')
       singleShotArray[i * 2] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png')
       singleShotArray[i * 2 + 1] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png')
+
+      // 设定与子弹进行碰撞判定的敌机
+      shotArray[i].setTargets(enemyArray)
+      singleShotArray[i * 2].setTargets(enemyArray)
+      singleShotArray[i * 2 + 1].setTargets(enemyArray)
     }
     // 设置自机拥有的子弹实例数组
     viper.setShotArray(shotArray, singleShotArray)
@@ -232,7 +237,7 @@
           if (enemyArray[i].life <= 0) {
             let e = enemyArray[i]
             // 设置出现位置，X在画面中央，Y在画面上端外侧
-            e.set(CANVAS_WIDTH / 2, -e.height)
+            e.set(CANVAS_WIDTH / 2, -e.height, 2, 'default')
             // 设置前进方向为直下
             e.setVector(0.0, 1.0)
             break

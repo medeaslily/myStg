@@ -25,6 +25,16 @@ class Position {
       this.y = y
     }
   }
+
+  /**
+   * 対象の Position クラスのインスタンスとの距離を返す
+   * @param {Position} target - 距離を測る対象
+   */
+  distance(target) {
+    let x = this.x - target.x
+    let y = this.y - target.y
+    return Math.sqrt(x * x + y * y)
+  }
 }
 
 /**
@@ -235,6 +245,8 @@ class Viper extends Character {
             if (this.shotArray[i].life <= 0) {
               // 以自机坐标设定生存状态的子弹
               this.shotArray[i].set(this.position.x, this.position.y)
+              // 设定自机子弹的攻击力
+              this.shotArray[i].setPower(2)
               // 计数器设置为负间隔
               this.shotCheckCounter = -this.shotInterval
               // 避免所有的子弹在一瞬间生成，无法逐个按顺序发射子弹
@@ -279,6 +291,16 @@ class Shot extends Character {
      * @type {number}
      */
     this.speed = 7
+    /**
+     * 子弹的攻击力
+     * @type {number}
+     */
+    this.power = 1
+    /**
+     * 储存与其自身进行碰撞判定的目标
+     * @type {Array<Character>}
+     */
+    this.targetArray = []
   }
 
   set(x, y) {
@@ -286,6 +308,28 @@ class Shot extends Character {
     this.position.set(x, y)
     // 将子弹设为生存状态
     this.life = 1
+  }
+
+  /**
+   * 设定子弹的攻击力
+   * @param {number} [power] - 设定攻击力
+   */
+  setPower(power) {
+    if (power != null && power > 0) {
+      this.power = power
+    }
+  }
+
+  /**
+   * 设定与子弹进行冲突判定的对象
+   * @param {Array<Character>} [targets] - 含有冲突判定对象的数组
+   */
+  setTargets(targets) {
+    if (targets != null
+        && Array.isArray(targets) === true
+        && targets.length > 0) {
+      this.targetArray = targets
+    }
   }
 
   /**
@@ -310,6 +354,20 @@ class Shot extends Character {
     // 使用vector进行移动
     this.position.x += this.vector.x * this.speed
     this.position.y += this.vector.y * this.speed
+
+    // 进行子弹和目标的碰撞判定
+    this.targetArray.map((v) => {
+      // 忽略生命值为 0 或以下的自身或目标
+      if (this.life <= 0 || v.life <= 0) {return}
+      // 测量自身位置和目标的距离
+      let dist = this.position.distance(v.position)
+      // 如果接近到自身和目标宽度的1/4的距离，就认为发生了碰撞
+      if (dist <= (this.width + v.width) / 4) {
+        v.life -= this.power
+        this.life = 0
+      }
+    })
+
     // 考虑到坐标系的旋转进行绘制
     this.rotationDraw();
   }
@@ -348,6 +406,7 @@ class Enemy extends Character {
      */
     this.shotArray = null
   }
+
   set(x, y, life = 1, type = 'default') {
     // 敌机移动到的登场开始位置
     this.position.set(x, y)
@@ -389,11 +448,13 @@ class Enemy extends Character {
   }
 
   update() {
-    if (this.life <= 0) {return}
+    if (this.life <= 0) {
+      return
+    }
     // 根据类型改变行为
     // 也改变使生命值变为0的条件
     switch (this.type) {
-      // 默认类型只是直接按设定的方向前进
+        // 默认类型只是直接按设定的方向前进
       case 'default':
       default:
         if (this.frame === 50) {
