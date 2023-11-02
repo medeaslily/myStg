@@ -24,6 +24,11 @@
    * @type {number}
    */
   const ENEMY_SHOT_MAX_COUNT = 50
+  /**
+   * 爆炸效果的最大数
+   * @type {number}
+   */
+  const EXPLOSION_MAX_COUNT = 10
 
   /**
    * 包装 Canvas2D API的实用类
@@ -80,6 +85,11 @@
    * @type {Array<Shot>}
    */
   let singleShotArray = []
+  /**
+   * 存储爆炸效果实例的数组
+   * @type {Array<Explosion>}
+   */
+  let explosionArray = []
 
 
   window.addEventListener('load', () => {
@@ -112,6 +122,11 @@
     // 场景实例初始化
     scene = new SceneManager()
 
+    // 爆炸效果实例初始化
+    for (i = 0; i < EXPLOSION_MAX_COUNT; i++) {
+      explosionArray[i] = new Explosion(ctx, 50.0, 15, 30.0, 0.25)
+    }
+
     // 敌机子弹实例初始化
     for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
       enemyShotArray[i] = new Shot(ctx, 0, 0, 32, 32, './image/enemy_shot.png')
@@ -130,7 +145,13 @@
       singleShotArray[i * 2] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png')
       singleShotArray[i * 2 + 1] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png')
 
-      // 设定与子弹进行碰撞判定的敌机
+      // 每个子弹实例公用一个爆炸效果数组
+      shotArray[i].setExplosions(explosionArray)
+      singleShotArray[i * 2].setExplosions(explosionArray)
+      singleShotArray[i * 2 + 1].setExplosions(explosionArray)
+
+
+      // 设定子弹的碰撞判定对象
       shotArray[i].setTargets(enemyArray)
       singleShotArray[i * 2].setTargets(enemyArray)
       singleShotArray[i * 2 + 1].setTargets(enemyArray)
@@ -202,6 +223,9 @@
 
     // 敌机子弹状态更新
     enemyShotArray.map((v) => {v.update()})
+
+    // 爆炸效果状态更新
+    explosionArray.map((v) => {v.update()})
 
     // 为了持续循环，进行绘制处理的递归调用
     requestAnimationFrame(render)

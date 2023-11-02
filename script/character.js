@@ -301,6 +301,11 @@ class Shot extends Character {
      * @type {Array<Character>}
      */
     this.targetArray = []
+    /**
+     * 子弹拥有的爆炸效果数组
+     * @type {Array<Explosion>}
+     */
+    this.explosionArray = []
   }
 
   set(x, y) {
@@ -333,6 +338,18 @@ class Shot extends Character {
   }
 
   /**
+   * 设定子弹拥有的爆炸效果数组
+   * @param {Array<Explosion>} targets
+   */
+  setExplosions(targets) {
+    if (targets !== null
+        && Array.isArray(targets)
+        && targets.length > 0) {
+      this.explosionArray = targets
+    }
+  }
+
+  /**
    * 设置子弹的速度
    * @param {number} [speed] - 设定速度
    */
@@ -344,9 +361,7 @@ class Shot extends Character {
 
   update() {
     // 如果子弹是非生存状态的场合，不做任何绘制
-    if (this.life <= 0) {
-      return
-    }
+    if (this.life <= 0) {return}
     // 如果子弹移动到画面(上端)外，life设定为0
     if (this.position.y + this.height < 0) {
       this.life = 0
@@ -364,6 +379,16 @@ class Shot extends Character {
       // 如果接近到自身和目标宽度的1/4的距离，就认为发生了碰撞
       if (dist <= (this.width + v.width) / 4) {
         v.life -= this.power
+        // 如果进行碰撞的对象生命值为0以下
+        if (v.life <= 0) {
+          // 使用一个爆炸效果实例
+          for (let i = 0; i < this.explosionArray.length; i++) {
+            if (this.explosionArray[i].life !== true) {
+              this.explosionArray[i].set(v.position.x, v.position.y)
+              break
+            }
+          }
+        }
         this.life = 0
       }
     })
@@ -473,5 +498,127 @@ class Enemy extends Character {
     this.draw()
     // 自身的帧计数器累加
     ++this.frame
+  }
+}
+
+/**
+ * @constructor
+ * @param {CanvasRenderingContext2D} ctx - 用于绘制等操作的上下文
+ * @param {number} radius - 爆炸扩散的半径
+ * @param {number} count - 爆炸的火花数量
+ * @param {number} size - 爆炸火花的大小（宽度和高度）
+ * @param {number} timeRange - 爆炸消失的时间（以秒为单位）
+ * @param {string} [color='#ff1166'] - 爆炸的颜色
+ */
+class Explosion {
+  constructor(ctx, radius, count, size, timeRange, color = '#ff1166') {
+    /**
+     * @type {CanvasRenderingContext2D}
+     */
+    this.ctx = ctx
+    /**
+     * 爆炸扩散的半径
+     * @type {number}
+     */
+    this.radius = radius
+    /**
+     * 爆炸的火花数量
+     * @type {number}
+     */
+    this.count = count
+    /**
+     * 爆炸消失的时间
+     * @type {number}
+     */
+    this.timeRange = timeRange
+    /**
+     * 填充爆炸时的颜色
+     * @type {string}
+     */
+    this.color = color
+    /**
+     * 表示爆炸的生存状态的标志
+     * @type {boolean}
+     */
+    this.life = false
+    /**
+     * 自身的坐标
+     * @type {Position}
+     */
+    this.position = null
+    /**
+     * 爆炸开始时的时间戳
+     * @type {number}
+     */
+    this.startTime = 0
+    /**
+     * 每朵火花的大小（宽度和高度）
+     * @type {number}
+     */
+    this.fireSize = size
+    /**
+     * 存储火花位置的数组
+     * @type {Array<Position>}
+     */
+    this.firePosition = []
+    /**
+     * 存储火花移动方向的数组
+     * @type {Array<Position>}
+     */
+    this.fireVector = []
+  }
+
+  /**
+   * 设置爆炸效果
+   * @param {number} x - 爆炸发生的 X 坐标
+   * @param {number} y - 爆炸发生的 Y 坐标
+   */
+  set(x, y) {
+    // 设置每一朵火花
+    for (let i = 0; i < this.count; i++) {
+      // 火花的初始位置设置为爆炸的初始位置
+      this.firePosition[i] =new Position(x, y)
+      // 为火花设置随机的方向
+      // 随机确定火花的前进方向（成为弧度的方向）
+      let r = Math.random() * Math.PI * 2.0
+      let s = Math.sin(r)
+      let c = Math.cos(r)
+      this.fireVector[i] = new  Position(c, s)
+      // 设置爆炸的生存状态
+      this.life = true
+      // 获取爆炸开始时的时间戳
+      this.startTime = Date.now()
+    }
+  }
+
+  update() {
+    // 检查生存状态
+    if (this.life !== true) {return}
+    // 设置绘制状态
+    this.ctx.fillStyle = this.color
+    this.ctx.globalAlpha = 0.5
+    // 计算进度率
+    let time = (Date.now() - this.startTime) / 1000
+    let progress = Math.min(time / this.timeRange, 1.0)
+    // 根据进度在相应位置绘制火花
+    for (let i = 0; i < this.firePosition.length; i++) {
+      // 火花扩散距离
+      let d = this.radius * progress
+      // 计算出随着进度率变化而变化的火花的坐标X,Y
+      // 火花初始坐标一直保留
+      let x = this.firePosition[i].x + this.fireVector[i].x * d
+      let y = this.firePosition[i].y + this.fireVector[i].y * d
+      // 火花坐标X,Y作为中心绘制矩形
+      this.ctx.fillRect(
+          x - this.fireSize / 2,
+          y - this.fireSize / 2,
+          this.fireSize,
+          this.fireSize
+      )
+    }
+    // 如果进度达到100%，则设置为非生存状态
+    if (progress >= 1.0) {
+      this.life = false
+    }
   }
 }
